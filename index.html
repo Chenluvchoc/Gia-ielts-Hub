@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雅思备考与语料终极工作台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        body { background: #f8f9fa; }
+        .tab-active { color: #4f46e5; border-bottom: 2px solid #4f46e5; }
+        .tab-inactive { color: #6b7280; border-bottom: 2px solid transparent; }
+        .tab-inactive:hover { color: #374151; }
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .card-hover { transition: box-shadow 0.2s, transform 0.15s; }
+        .card-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .spinner { border: 2px solid #e5e7eb; border-top: 2px solid #4f46e5; border-radius: 50%; width: 18px; height: 18px; animation: spin 0.7s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        input:focus, textarea:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(79,70,229,0.15); border-color: #4f46e5; }
+        .checkbox-custom { appearance: none; width: 18px; height: 18px; border: 2px solid #d1d5db; border-radius: 4px; cursor: pointer; position: relative; flex-shrink: 0; transition: all 0.15s; }
+        .checkbox-custom:checked { background: #4f46e5; border-color: #4f46e5; }
+        .checkbox-custom:checked::after { content: ''; position: absolute; left: 5px; top: 1px; width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+        .star { color: #fbbf24; }
+        .star-empty { color: #e5e7eb; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+        .modal-overlay { background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ========== Header ========== -->
+<header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-14">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">IE</div>
+                <h1 class="text-base font-semibold text-gray-900 hidden sm:block">雅思备考与语料终极工作台</h1>
+                <h1 class="text-sm font-semibold text-gray-900 sm:hidden">IELTS Command Center</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="apiStatusBadge" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">未配置 API</span>
+                <button onclick="switchTab('settings')" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Tab Navigation -->
+        <nav class="flex gap-1 -mb-px overflow-x-auto">
+            <button id="tab-vocab" onclick="switchTab('vocab')" class="tab-active px-4 py-2.5 text-sm font-medium whitespace-nowrap transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                生词与语料
+            </button>
+            <button id="tab-paraphrase" onclick="switchTab('paraphrase')" class="tab-inactive px-4 py-2.5 text-sm font-medium whitespace-nowrap transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                同义替换库
+            </button>
+            <button id="tab-settings" onclick="switchTab('settings')" class="tab-inactive px-4 py-2.5 text-sm font-medium whitespace-nowrap transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                设置
+            </button>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+<!-- ========== Module 1: Vocabulary Hub ========== -->
+<section id="section-vocab" class="fade-in">
+
+    <!-- AI Analysis Input -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </div>
+            <h2 class="text-sm font-semibold text-gray-800">AI 智能解析生词 / 语料</h2>
+        </div>
+        <textarea id="vocabInput" rows="3" placeholder="输入生词或词组，多个用逗号或换行分隔。例如：address the issue, paramount, shed light on" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg resize-none bg-gray-50 focus:bg-white transition"></textarea>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
+            <p class="text-xs text-gray-400">AI 将返回词性、释义、雅思板块归属、高频搭配与高分例句</p>
+            <button id="analyzeBtn" onclick="analyzeVocabulary()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center justify-center gap-2 transition w-full sm:w-auto">
+                <span id="analyzeBtnText">AI 一键解析</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Result Card (hidden by default) -->
+    <div id="aiResultContainer" class="hidden mb-5"></div>
+
+    <!-- Vocabulary Library -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h2 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                我的词库 <span id="vocabCount" class="text-xs text-gray-400 font-normal">(0)</span>
+            </h2>
+            <button onclick="exportAnkiCSV()" class="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1.5 self-start sm:self-auto">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                导出 Anki CSV
+            </button>
+        </div>
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+            <button onclick="filterVocab('all')" id="filter-all" class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-indigo-600 text-white whitespace-nowrap">全部</button>
+            <button onclick="filterVocab('写作')" id="filter-写作" class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 whitespace-nowrap">写作</button>
+            <button onclick="filterVocab('口语')" id="filter-口语" class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 whitespace-nowrap">口语</button>
+            <button onclick="filterVocab('阅读')" id="filter-阅读" class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 whitespace-nowrap">阅读</button>
+            <button onclick="filterVocab('听力')" id="filter-听力" class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 whitespace-nowrap">听力</button>
+        </div>
+        <!-- Search -->
+        <div class="relative mb-4">
+            <svg class="w-4 h-4 text-gray-300 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="vocabSearch" oninput="renderVocabLibrary()" placeholder="搜索生词或中文释义…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50">
+        </div>
+        <!-- Vocab Cards -->
+        <div id="vocabLibrary" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        <div id="vocabEmpty" class="text-center py-12 text-gray-300">
+            <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <p class="text-sm">词库还是空的，快去解析生词吧</p>
+        </div>
+    </div>
+</section>
+
+<!-- ========== Module 2: Paraphrase Board ========== -->
+<section id="section-paraphrase" class="hidden fade-in">
+
+    <!-- Paraphrase Input -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 mb-5">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            </div>
+            <h2 class="text-sm font-semibold text-gray-800">AI 同义替换分析</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+                <label class="text-xs text-gray-500 mb-1 block">题目 / 选项表达</label>
+                <input type="text" id="paraphraseQ" placeholder="如：a variety of" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 mb-1 block">真题原文表达</label>
+                <input type="text" id="paraphraseO" placeholder="如：a range of" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p class="text-xs text-gray-400">AI 将分析替换类型、星级与详细解读，助力刷题效率</p>
+            <button id="paraphraseBtn" onclick="analyzeParaphrase()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-5 py-2 rounded-lg flex items-center justify-center gap-2 transition w-full sm:w-auto">
+                <span id="paraphraseBtnText">AI 分析同义替换</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- AI Result (hidden by default) -->
+    <div id="paraphraseResultContainer" class="hidden mb-5"></div>
+
+    <!-- Paraphrase Library -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h2 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                同义替换记录 <span id="paraCount" class="text-xs text-gray-400 font-normal">(0)</span>
+            </h2>
+            <button onclick="exportParaphraseCSV()" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1.5 self-start sm:self-auto">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                导出 CSV
+            </button>
+        </div>
+        <!-- Filter -->
+        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1" id="paraFilters">
+            <button onclick="filterPara('all')" id="pfilter-all" class="pfilter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-emerald-600 text-white whitespace-nowrap">全部</button>
+        </div>
+        <!-- Search -->
+        <div class="relative mb-4">
+            <svg class="w-4 h-4 text-gray-300 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="paraSearch" oninput="renderParaLibrary()" placeholder="搜索表达内容…" class="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50">
+        </div>
+        <!-- Paraphrase Cards -->
+        <div id="paraLibrary" class="space-y-3"></div>
+        <div id="paraEmpty" class="text-center py-12 text-gray-300">
+            <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            <p class="text-sm">还没有同义替换记录，快去分析吧</p>
+        </div>
+    </div>
+</section>
+
+<!-- ========== Module 3: Settings ========== -->
+<section id="section-settings" class="hidden fade-in">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center gap-2 mb-5">
+                <div class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                </div>
+                <h2 class="text-sm font-semibold text-gray-800">LLM API 配置</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1.5 block">API Base URL</label>
+                    <input type="text" id="apiBaseUrl" placeholder="https://api.openai.com/v1" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
+                    <p class="text-xs text-gray-400 mt-1">兼容 OpenAI 格式的接口地址（不含 /chat/completions）</p>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1.5 block">API Key</label>
+                    <input type="password" id="apiKey" placeholder="sk-..." class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition font-mono">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1.5 block">Model Name</label>
+                    <input type="text" id="modelName" placeholder="gpt-4o-mini" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1.5 block">System Prompt 补充（可选）</label>
+                    <textarea id="systemPromptExtra" rows="2" placeholder="可补充自定义系统提示词，如：请用更口语化的风格…" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 mt-5">
+                <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition">保存配置</button>
+                <button onclick="testConnection()" id="testConnBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-5 py-2 rounded-lg transition">测试连接</button>
+                <span id="connResult" class="text-xs"></span>
+            </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mt-5">
+            <h2 class="text-sm font-semibold text-gray-800 mb-4">数据管理</h2>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">导出全部数据</p>
+                        <p class="text-xs text-gray-400">将词库与同义替换记录导出为 JSON</p>
+                    </div>
+                    <button onclick="exportAllData()" class="text-xs text-indigo-600 hover:text-indigo-700 font-medium">导出</button>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">导入数据</p>
+                        <p class="text-xs text-gray-400">从 JSON 文件导入（合并模式）</p>
+                    </div>
+                    <label class="text-xs text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer">
+                        选择文件
+                        <input type="file" accept=".json" onchange="importData(event)" class="hidden">
+                    </label>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-red-700">清空所有数据</p>
+                        <p class="text-xs text-red-400">删除词库、同义替换记录与 API 配置</p>
+                    </div>
+                    <button onclick="clearAllData()" class="text-xs text-red-600 hover:text-red-700 font-medium">清空</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div class="text-center mt-6 pb-4">
+            <p class="text-xs text-gray-300">IELTS Exam & Vocabulary Command Center · 数据存储于本地浏览器</p>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<!-- ========== Toast ========== -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden">
+    <div class="bg-gray-900 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2">
+        <span id="toastIcon"></span>
+        <span id="toastMsg"></span>
+    </div>
+</div>
+
+<!-- ========== Confirm Modal ========== -->
+<div id="confirmModal" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 fade-in">
+        <h3 id="confirmTitle" class="text-sm font-semibold text-gray-800 mb-2">确认操作</h3>
+        <p id="confirmMsg" class="text-sm text-gray-500 mb-4"></p>
+        <div class="flex justify-end gap-2">
+            <button onclick="closeConfirm()" class="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-100">取消</button>
+            <button id="confirmOkBtn" class="text-sm text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg">确认</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== State ====================
+let state = {
+    settings: { apiBaseUrl: '', apiKey: '', modelName: '', systemPromptExtra: '' },
+    vocab: [],
+    paraphrases: [],
+    aiResult: null,
+    paraResult: null,
+    vocabFilter: 'all',
+    paraFilter: 'all',
+};
+
+// ==================== localStorage ====================
+const LS = {
+    get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+    set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
+};
+
+function loadState() {
+    state.settings = LS.get('ielts_settings', state.settings);
+    state.vocab = LS.get('ielts_vocab', []);
+    state.paraphrases = LS.get('ielts_paraphrases', []);
+    // Sync settings inputs
+    document.getElementById('apiBaseUrl').value = state.settings.apiBaseUrl || '';
+    document.getElementById('apiKey').value = state.settings.apiKey || '';
+    document.getElementById('modelName').value = state.settings.modelName || '';
+    document.getElementById('systemPromptExtra').value = state.settings.systemPromptExtra || '';
+    updateApiBadge();
+}
+
+function saveVocab() { LS.set('ielts_vocab', state.vocab); }
+function saveParaphrases() { LS.set('ielts_paraphrases', state.paraphrases); }
+
+// ==================== API Call ====================
+async function callLLM(userPrompt, systemPrompt) {
+    const { apiBaseUrl, apiKey, modelName, systemPromptExtra } = state.settings;
+    if (!apiBaseUrl || !apiKey || !modelName) {
+        throw new Error('请先在设置中配置 API 地址、密钥与模型名称');
+    }
+    const url = apiBaseUrl.replace(/\/+$/, '') + '/chat/completions';
+    const messages = [];
+    const sys = (systemPrompt || '') + (systemPromptExtra ? '\n\n' + systemPromptExtra : '');
+    if (sys) messages.push({ role: 'system', content: sys });
+    messages.push({ role: 'user', content: userPrompt });
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ model: modelName, messages, temperature: 0.3 }),
+    });
+
+    if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`API 请求失败 (${res.status}): ${errText.substring(0, 200)}`);
+    }
+    const data = await res.json();
+    let content = data.choices?.[0]?.message?.content || '';
+    if (!content) throw new Error('API 返回内容为空');
+    // Strip markdown code blocks
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    return content;
+}
+
+function parseJSON(text) {
+    try { return JSON.parse(text); }
+    catch {
+        // Try to extract JSON from text
+        const m = text.match(/\[[\s\S]*\]/) || text.match(/\{[\s\S]*\}/);
+        if (m) { try { return JSON.parse(m[0]); } catch {} }
+        throw new Error('JSON 解析失败，请检查 API 返回格式');
+    }
+}
+
+// ==================== Vocabulary Hub ====================
+const VOCAB_SYSTEM = `你是一个雅思考试专家和词汇教师。用户会给你生词或短语，请对每个词/短语进行分析并返回 JSON 数组。每个元素包含：
+- word: 生词/短语原文
+- pos: 词性/类型（如：核心动词、地道短语、同义替换、学术名词）
+- meaning: 简短中文释义（6字以内）
+- module: 最适用雅思板块，仅限填：写作 / 口语 / 阅读 / 听力
+- topic: 雅思话题分类（如：科技与环境、教育、社会福利、城市化、健康）
+- collocations: 数组，3个雅思高频搭配，每个为 {en: 英文搭配, zh: 中文简释}
+- example: 1个地道雅思高分例句，为 {en: 英文例句, zh: 中文翻译}
+
+必须严格返回 JSON 数组，不要包含任何其他文字或 markdown 格式。`;
+
+async function analyzeVocabulary() {
+    const input = document.getElementById('vocabInput').value.trim();
+    if (!input) { showToast('请输入生词或词组', 'warn'); return; }
+    if (!state.settings.apiKey) { showToast('请先配置 API', 'warn'); switchTab('settings'); return; }
+
+    const btn = document.getElementById('analyzeBtn');
+    const btnText = document.getElementById('analyzeBtnText');
+    btn.disabled = true; btnText.innerHTML = '<span class="spinner"></span> 解析中…';
+
+    try {
+        const raw = await callLLM(`请分析以下雅思生词/短语：\n${input}`, VOCAB_SYSTEM);
+        const results = parseJSON(raw);
+        if (!Array.isArray(results)) { state.aiResult = [results]; } else { state.aiResult = results; }
+        renderAIResult();
+        showToast('解析完成', 'success');
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        btn.disabled = false; btnText.textContent = 'AI 一键解析';
+    }
+}
+
+function renderAIResult() {
+    const container = document.getElementById('aiResultContainer');
+    if (!state.aiResult || state.aiResult.length === 0) { container.classList.add('hidden'); return; }
+    container.classList.remove('hidden');
+
+    const moduleColors = {
+        '写作': 'bg-blue-50 text-blue-600',
+        '口语': 'bg-purple-50 text-purple-600',
+        '阅读': 'bg-amber-50 text-amber-600',
+        '听力': 'bg-teal-50 text-teal-600',
+    };
+
+    let html = '<div class="space-y-3">';
+    state.aiResult.forEach((item, idx) => {
+        const mc = moduleColors[item.module] || 'bg-gray-50 text-gray-600';
+        html += `
+        <div class="bg-white rounded-xl border border-indigo-200 p-5 card-hover">
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex-1">
+                    <input type="text" value="${escapeHtml(item.word)}" onchange="updateAIResult(${idx}, 'word', this.value)" class="text-lg font-bold text-gray-900 bg-transparent border-none p-0 focus:outline-none focus:ring-0 w-full">
+                    <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span class="text-xs px-2 py-0.5 rounded-full ${mc} font-medium">${escapeHtml(item.module)}</span>
+                        <span class="text-xs text-gray-400">${escapeHtml(item.pos)}</span>
+                        <span class="text-xs text-gray-400">·</span>
+                        <span class="text-xs text-gray-400">${escapeHtml(item.topic)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="text-xs text-gray-400 mb-0.5 block">中文释义</label>
+                    <input type="text" value="${escapeHtml(item.meaning)}" onchange="updateAIResult(${idx}, 'meaning', this.value)" class="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 mb-0.5 block">话题分类</label>
+                    <input type="text" value="${escapeHtml(item.topic)}" onchange="updateAIResult(${idx}, 'topic', this.value)" class="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white">
+                </div>
+            </div>
+            <div class="mb-3">
+                <p class="text-xs text-gray-400 mb-1.5">高频搭配（勾选要存入的项）</p>
+                <div class="space-y-1.5">
+                    ${(item.collocations || []).map((c, ci) => `
+                    <label class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="checkbox-custom" checked onchange="toggleCollocation(${idx}, ${ci}, this.checked)">
+                        <span class="text-sm text-gray-700 font-medium">${escapeHtml(c.en)}</span>
+                        <span class="text-xs text-gray-400">— ${escapeHtml(c.zh)}</span>
+                    </label>`).join('')}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="text-xs text-gray-400 mb-0.5 block">高分例句</label>
+                <div class="p-2.5 bg-indigo-50/50 rounded-lg">
+                    <p class="text-sm text-gray-800">${escapeHtml(item.example?.en)}</p>
+                    <p class="text-xs text-gray-500 mt-1">${escapeHtml(item.example?.zh)}</p>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="saveToVocab(${idx})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    存入词库
+                </button>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function updateAIResult(idx, field, value) {
+    if (state.aiResult[idx]) state.aiResult[idx][field] = value;
+}
+
+function toggleCollocation(idx, ci, checked) {
+    if (!state.aiResult[idx]._selected) state.aiResult[idx]._selected = {};
+    state.aiResult[idx]._selected[ci] = checked;
+}
+
+function saveToVocab(idx) {
+    const item = state.aiResult[idx];
+    if (!item) return;
+    const selected = item._selected || {};
+    const collocations = (item.collocations || []).filter((_, ci) => selected[ci] !== false);
+    const entry = {
+        id: Date.now() + Math.random(),
+        word: item.word,
+        pos: item.pos,
+        meaning: item.meaning,
+        module: item.module,
+        topic: item.topic,
+        collocations,
+        example: item.example,
+        createdAt: new Date().toISOString(),
+    };
+    state.vocab.unshift(entry);
+    saveVocab();
+    renderVocabLibrary();
+    showToast(`"${entry.word}" 已存入词库`, 'success');
+}
+
+function filterVocab(mod) {
+    state.vocabFilter = mod;
+    const labels = { 'all': '全部', '写作': '写作', '口语': '口语', '阅读': '阅读', '听力': '听力' };
+    Object.keys(labels).forEach(k => {
+        const btn = document.getElementById('filter-' + k);
+        if (k === mod) { btn.className = 'filter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-indigo-600 text-white whitespace-nowrap'; }
+        else { btn.className = 'filter-btn px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 whitespace-nowrap'; }
+    });
+    renderVocabLibrary();
+}
+
+function renderVocabLibrary() {
+    const lib = document.getElementById('vocabLibrary');
+    const empty = document.getElementById('vocabEmpty');
+    const search = (document.getElementById('vocabSearch')?.value || '').toLowerCase();
+
+    let list = state.vocab;
+    if (state.vocabFilter !== 'all') list = list.filter(v => v.module === state.vocabFilter);
+    if (search) list = list.filter(v =>
+        (v.word || '').toLowerCase().includes(search) ||
+        (v.meaning || '').toLowerCase().includes(search) ||
+        (v.topic || '').toLowerCase().includes(search)
+    );
+
+    document.getElementById('vocabCount').textContent = `(${state.vocab.length})`;
+
+    if (list.length === 0) {
+        lib.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+    }
+    empty.classList.add('hidden');
+
+    const moduleColors = {
+        '写作': 'bg-blue-50 text-blue-600',
+        '口语': 'bg-purple-50 text-purple-600',
+        '阅读': 'bg-amber-50 text-amber-600',
+        '听力': 'bg-teal-50 text-teal-600',
+    };
+
+    lib.innerHTML = list.map(v => {
+        const mc = moduleColors[v.module] || 'bg-gray-50 text-gray-600';
+        return `
+        <div class="border border-gray-200 rounded-lg p-3.5 card-hover bg-white">
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-bold text-gray-900 truncate">${escapeHtml(v.word)}</h3>
+                    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded-full ${mc} font-medium">${escapeHtml(v.module)}</span>
+                        <span class="text-[10px] text-gray-400">${escapeHtml(v.pos)}</span>
+                    </div>
+                </div>
+                <button onclick="deleteVocab('${v.id}')" class="text-gray-300 hover:text-red-500 p-1 -mt-1 -mr-1 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">${escapeHtml(v.meaning)}</p>
+            ${v.collocations && v.collocations.length > 0 ? `
+            <div class="space-y-1 mb-2">
+                ${v.collocations.map(c => `<div class="text-xs text-gray-500"><span class="text-gray-700 font-medium">${escapeHtml(c.en)}</span> — ${escapeHtml(c.zh)}</div>`).join('')}
+            </div>` : ''}
+            ${v.example ? `
+            <div class="p-2 bg-gray-50 rounded text-xs">
+                <p class="text-gray-700">${escapeHtml(v.example.en)}</p>
+                <p class="text-gray-400 mt-0.5">${escapeHtml(v.example.zh)}</p>
+            </div>` : ''}
+            ${v.topic ? `<p class="text-[10px] text-gray-300 mt-2">话题：${escapeHtml(v.topic)}</p>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function deleteVocab(id) {
+    showConfirm('删除词条', '确定要删除这个词条吗？此操作不可撤销。', () => {
+        state.vocab = state.vocab.filter(v => String(v.id) !== String(id));
+        saveVocab();
+        renderVocabLibrary();
+        showToast('已删除', 'success');
+    });
+}
+
+function exportAnkiCSV() {
+    if (state.vocab.length === 0) { showToast('词库为空，无需导出', 'warn'); return; }
+    const rows = state.vocab.map(v => {
+        const front = v.word;
+        const collocations = (v.collocations || []).map(c => `${c.en} (${c.zh})`).join('<br>');
+        const back = [
+            `<b>${escapeHtml(v.meaning || '')}</b> [${escapeHtml(v.pos || '')}]`,
+            collocations ? `<br><br><b>高频搭配：</b><br>${collocations}` : '',
+            v.example ? `<br><br><b>例句：</b><br>${escapeHtml(v.example.en)}<br><i>${escapeHtml(v.example.zh)}</i>` : '',
+        ].join('');
+        const tags = [v.module, v.topic].filter(Boolean).map(t => t.replace(/\s+/g, '_')).join(' ');
+        // Tab-separated for Anki
+        return [front, back, tags].map(f => f.replace(/\t/g, ' ')).join('\t');
+    });
+    const csv = '\ufeff' + rows.join('\n'); // BOM for UTF-8
+    downloadFile(csv, 'ielts_vocab_anki.txt', 'text/plain;charset=utf-8');
+    showToast(`已导出 ${state.vocab.length} 条词汇`, 'success');
+}
+
+// ==================== Paraphrase Board ====================
+const PARA_SYSTEM = `你是一个雅思阅读和听力同义替换专家。用户会给你两个表达：一个是题目/选项中的表达，另一个是真题原文中的表达。请分析它们的同义替换关系并返回 JSON 对象，包含：
+- type: 替换类型，仅限选其一：近义表达 / 词性转换 / 上下义词 / 句式重构 / 否定转换 / 逻辑转换
+- rating: 雅思高频替换星级，1-5 的整数（5 表示极高频）
+- explanation: 详细分析说明（中文，解释替换逻辑与注意事项，50-100字）
+- questionExpr: 题目/选项表达（原文）
+- originalExpr: 真题原文表达（原文）
+- relatedExpressions: 数组，2-3个相关的同义替换表达（字符串）
+- examTip: 针对该类型替换的考试技巧（中文，一句话）
+
+必须严格返回 JSON 对象，不要包含任何其他文字或 markdown 格式。`;
+
+async function analyzeParaphrase() {
+    const q = document.getElementById('paraphraseQ').value.trim();
+    const o = document.getElementById('paraphraseO').value.trim();
+    if (!q || !o) { showToast('请填写两个表达', 'warn'); return; }
+    if (!state.settings.apiKey) { showToast('请先配置 API', 'warn'); switchTab('settings'); return; }
+
+    const btn = document.getElementById('paraphraseBtn');
+    const btnText = document.getElementById('paraphraseBtnText');
+    btn.disabled = true; btnText.innerHTML = '<span class="spinner"></span> 分析中…';
+
+    try {
+        const raw = await callLLM(
+            `请分析以下两个表达之间的同义替换关系：\n题目/选项表达：${q}\n真题原文表达：${o}`,
+            PARA_SYSTEM
+        );
+        const result = parseJSON(raw);
+        state.paraResult = result;
+        renderParaResult();
+        showToast('分析完成', 'success');
+    } catch (e) {
+        showToast(e.message, 'error');
+    } finally {
+        btn.disabled = false; btnText.textContent = 'AI 分析同义替换';
+    }
+}
+
+function renderParaResult() {
+    const container = document.getElementById('paraphraseResultContainer');
+    if (!state.paraResult) { container.classList.add('hidden'); return; }
+    container.classList.remove('hidden');
+    const r = state.paraResult;
+
+    const typeColors = {
+        '近义表达': 'bg-emerald-50 text-emerald-600',
+        '词性转换': 'bg-blue-50 text-blue-600',
+        '上下义词': 'bg-purple-50 text-purple-600',
+        '句式重构': 'bg-amber-50 text-amber-600',
+        '否定转换': 'bg-red-50 text-red-600',
+        '逻辑转换': 'bg-teal-50 text-teal-600',
+    };
+    const tc = typeColors[r.type] || 'bg-gray-50 text-gray-600';
+
+    let stars = '';
+    for (let i = 0; i < 5; i++) {
+        stars += `<svg class="w-4 h-4 ${i < (r.rating || 0) ? 'star' : 'star-empty'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+    }
+
+    container.innerHTML = `
+    <div class="bg-white rounded-xl border border-emerald-200 p-5 card-hover">
+        <div class="flex items-center gap-2 mb-4 flex-wrap">
+            <span class="text-xs px-2.5 py-1 rounded-full ${tc} font-medium">${escapeHtml(r.type)}</span>
+            <div class="flex items-center gap-0.5">${stars}</div>
+            <span class="text-xs text-gray-400">高频替换星级</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div class="p-3 bg-emerald-50/50 rounded-lg">
+                <p class="text-xs text-gray-400 mb-1">题目 / 选项表达</p>
+                <p class="text-sm font-medium text-gray-800">${escapeHtml(r.questionExpr)}</p>
+            </div>
+            <div class="p-3 bg-blue-50/50 rounded-lg">
+                <p class="text-xs text-gray-400 mb-1">真题原文表达</p>
+                <p class="text-sm font-medium text-gray-800">${escapeHtml(r.originalExpr)}</p>
+            </div>
+        </div>
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-1">分析说明</p>
+            <p class="text-sm text-gray-600 leading-relaxed">${escapeHtml(r.explanation)}</p>
+        </div>
+        ${r.relatedExpressions && r.relatedExpressions.length > 0 ? `
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-1.5">相关同义替换</p>
+            <div class="flex gap-2 flex-wrap">
+                ${r.relatedExpressions.map(e => `<span class="text-xs px-2.5 py-1 bg-gray-100 rounded-full text-gray-600">${escapeHtml(e)}</span>`).join('')}
+            </div>
+        </div>` : ''}
+        ${r.examTip ? `
+        <div class="p-3 bg-amber-50/50 rounded-lg mb-4">
+            <p class="text-xs text-amber-600 mb-0.5 font-medium">考试技巧</p>
+            <p class="text-sm text-gray-600">${escapeHtml(r.examTip)}</p>
+        </div>` : ''}
+        <div class="flex justify-end">
+            <button onclick="saveToParaphrase()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                存入记录
+            </button>
+        </div>
+    </div>`;
+}
+
+function saveToParaphrase() {
+    if (!state.paraResult) return;
+    const entry = { ...state.paraResult, id: Date.now() + Math.random(), createdAt: new Date().toISOString() };
+    state.paraphrases.unshift(entry);
+    saveParaphrases();
+    renderParaLibrary();
+    renderParaFilters();
+    showToast('已存入同义替换记录', 'success');
+}
+
+function renderParaFilters() {
+    const types = [...new Set(state.paraphrases.map(p => p.type).filter(Boolean))];
+    const container = document.getElementById('paraFilters');
+    let html = `<button onclick="filterPara('all')" id="pfilter-all" class="pfilter-btn px-3 py-1.5 text-xs font-medium rounded-full ${state.paraFilter === 'all' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} whitespace-nowrap">全部</button>`;
+    types.forEach(t => {
+        html += `<button onclick="filterPara('${escapeHtml(t)}')" id="pfilter-${escapeHtml(t)}" class="pfilter-btn px-3 py-1.5 text-xs font-medium rounded-full ${state.paraFilter === t ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} whitespace-nowrap">${escapeHtml(t)}</button>`;
+    });
+    container.innerHTML = html;
+}
+
+function filterPara(type) {
+    state.paraFilter = type;
+    renderParaFilters();
+    renderParaLibrary();
+}
+
+function renderParaLibrary() {
+    const lib = document.getElementById('paraLibrary');
+    const empty = document.getElementById('paraEmpty');
+    const search = (document.getElementById('paraSearch')?.value || '').toLowerCase();
+
+    let list = state.paraphrases;
+    if (state.paraFilter !== 'all') list = list.filter(p => p.type === state.paraFilter);
+    if (search) list = list.filter(p =>
+        (p.questionExpr || '').toLowerCase().includes(search) ||
+        (p.originalExpr || '').toLowerCase().includes(search) ||
+        (p.explanation || '').toLowerCase().includes(search)
+    );
+
+    document.getElementById('paraCount').textContent = `(${state.paraphrases.length})`;
+
+    if (list.length === 0) { lib.innerHTML = ''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+
+    const typeColors = {
+        '近义表达': 'bg-emerald-50 text-emerald-600',
+        '词性转换': 'bg-blue-50 text-blue-600',
+        '上下义词': 'bg-purple-50 text-purple-600',
+        '句式重构': 'bg-amber-50 text-amber-600',
+        '否定转换': 'bg-red-50 text-red-600',
+        '逻辑转换': 'bg-teal-50 text-teal-600',
+    };
+
+    lib.innerHTML = list.map(p => {
+        const tc = typeColors[p.type] || 'bg-gray-50 text-gray-600';
+        let stars = '';
+        for (let i = 0; i < 5; i++) {
+            stars += `<svg class="w-3 h-3 ${i < (p.rating || 0) ? 'star' : 'star-empty'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+        }
+        return `
+        <div class="border border-gray-200 rounded-lg p-3.5 card-hover bg-white">
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded-full ${tc} font-medium">${escapeHtml(p.type)}</span>
+                    <div class="flex items-center gap-0.5">${stars}</div>
+                </div>
+                <button onclick="deletePara('${p.id}')" class="text-gray-300 hover:text-red-500 p-1 -mt-1 -mr-1 transition flex-shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                <div>
+                    <p class="text-[10px] text-gray-400">题目表达</p>
+                    <p class="text-sm font-medium text-gray-800">${escapeHtml(p.questionExpr)}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-400">原文表达</p>
+                    <p class="text-sm font-medium text-gray-800">${escapeHtml(p.originalExpr)}</p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 leading-relaxed">${escapeHtml(p.explanation)}</p>
+            ${p.examTip ? `<p class="text-[10px] text-amber-500 mt-1.5">💡 ${escapeHtml(p.examTip)}</p>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function deletePara(id) {
+    showConfirm('删除记录', '确定要删除这条同义替换记录吗？', () => {
+        state.paraphrases = state.paraphrases.filter(p => String(p.id) !== String(id));
+        saveParaphrases();
+        renderParaLibrary();
+        renderParaFilters();
+        showToast('已删除', 'success');
+    });
+}
+
+function exportParaphraseCSV() {
+    if (state.paraphrases.length === 0) { showToast('记录为空，无需导出', 'warn'); return; }
+    const header = ['题目表达', '原文表达', '替换类型', '星级', '分析说明', '相关表达', '考试技巧'];
+    const rows = state.paraphrases.map(p => [
+        p.questionExpr || '', p.originalExpr || '', p.type || '', p.rating || '',
+        p.explanation || '', (p.relatedExpressions || []).join('; '), p.examTip || ''
+    ].map(f => `"${String(f).replace(/"/g, '""')}"`).join(','));
+    const csv = '\ufeff' + header.join(',') + '\n' + rows.join('\n');
+    downloadFile(csv, 'ielts_paraphrases.csv', 'text/csv;charset=utf-8');
+    showToast(`已导出 ${state.paraphrases.length} 条记录`, 'success');
+}
+
+// ==================== Settings ====================
+function saveSettings() {
+    state.settings = {
+        apiBaseUrl: document.getElementById('apiBaseUrl').value.trim(),
+        apiKey: document.getElementById('apiKey').value.trim(),
+        modelName: document.getElementById('modelName').value.trim(),
+        systemPromptExtra: document.getElementById('systemPromptExtra').value.trim(),
+    };
+    LS.set('ielts_settings', state.settings);
+    updateApiBadge();
+    showToast('配置已保存', 'success');
+}
+
+async function testConnection() {
+    if (!state.settings.apiKey) { showToast('请先保存配置', 'warn'); return; }
+    const btn = document.getElementById('testConnBtn');
+    const result = document.getElementById('connResult');
+    btn.disabled = true; btn.textContent = '测试中…'; result.innerHTML = '<span class="spinner"></span>';
+
+    try {
+        const raw = await callLLM('请回复"连接成功"四个字。', '你是一个测试助手。');
+        result.innerHTML = `<span class="text-green-600 text-xs">✓ 连接成功</span>`;
+        showToast('连接成功', 'success');
+    } catch (e) {
+        result.innerHTML = `<span class="text-red-500 text-xs">✗ ${escapeHtml(e.message.substring(0, 60))}</span>`;
+    } finally {
+        btn.disabled = false; btn.textContent = '测试连接';
+    }
+}
+
+function updateApiBadge() {
+    const badge = document.getElementById('apiStatusBadge');
+    if (state.settings.apiKey && state.settings.apiBaseUrl && state.settings.modelName) {
+        badge.className = 'text-xs px-2 py-1 rounded-full bg-green-50 text-green-600';
+        badge.textContent = 'API 已就绪';
+    } else {
+        badge.className = 'text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500';
+        badge.textContent = '未配置 API';
+    }
+}
+
+// ==================== Data Management ====================
+function exportAllData() {
+    const data = { vocab: state.vocab, paraphrases: state.paraphrases, exportedAt: new Date().toISOString() };
+    downloadFile(JSON.stringify(data, null, 2), 'ielts_backup.json', 'application/json');
+    showToast('数据已导出', 'success');
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.vocab) { state.vocab = [...state.vocab, ...data.vocab]; saveVocab(); }
+            if (data.paraphrases) { state.paraphrases = [...state.paraphrases, ...data.paraphrases]; saveParaphrases(); }
+            renderVocabLibrary();
+            renderParaLibrary();
+            renderParaFilters();
+            showToast('数据导入成功', 'success');
+        } catch {
+            showToast('文件格式错误', 'error');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+function clearAllData() {
+    showConfirm('清空所有数据', '⚠️ 此操作将永久删除所有词库、同义替换记录与 API 配置，且不可撤销。确定继续吗？', () => {
+        localStorage.removeItem('ielts_vocab');
+        localStorage.removeItem('ielts_paraphrases');
+        localStorage.removeItem('ielts_settings');
+        state.vocab = []; state.paraphrases = []; state.settings = { apiBaseUrl: '', apiKey: '', modelName: '', systemPromptExtra: '' };
+        document.getElementById('apiBaseUrl').value = '';
+        document.getElementById('apiKey').value = '';
+        document.getElementById('modelName').value = '';
+        document.getElementById('systemPromptExtra').value = '';
+        updateApiBadge();
+        renderVocabLibrary();
+        renderParaLibrary();
+        renderParaFilters();
+        showToast('所有数据已清空', 'success');
+    });
+}
+
+// ==================== UI Helpers ====================
+function switchTab(tab) {
+    ['vocab', 'paraphrase', 'settings'].forEach(t => {
+        const tabEl = document.getElementById('tab-' + t);
+        const sec = document.getElementById('section-' + t);
+        if (t === tab) {
+            tabEl.classList.remove('tab-inactive');
+            tabEl.classList.add('tab-active');
+            sec.classList.remove('hidden');
+            sec.classList.add('fade-in');
+        } else {
+            tabEl.classList.remove('tab-active');
+            tabEl.classList.add('tab-inactive');
+            sec.classList.add('hidden');
+            sec.classList.remove('fade-in');
+        }
+    });
+}
+
+function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toastIcon');
+    const msgEl = document.getElementById('toastMsg');
+    const colors = {
+        success: 'bg-green-600',
+        error: 'bg-red-600',
+        warn: 'bg-amber-600',
+    };
+    const icons = {
+        success: '✓',
+        error: '✗',
+        warn: '⚠',
+    };
+    toast.querySelector('div').className = `${colors[type] || 'bg-gray-900'} text-white text-sm px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2`;
+    icon.textContent = icons[type] || '';
+    msgEl.textContent = msg;
+    toast.classList.remove('hidden');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.add('hidden'), 3000);
+}
+
+let _confirmCallback = null;
+function showConfirm(title, msg, callback) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    _confirmCallback = callback;
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.getElementById('confirmOkBtn').onclick = () => { closeConfirm(); if (_confirmCallback) _confirmCallback(); };
+}
+function closeConfirm() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    _confirmCallback = null;
+}
+
+function downloadFile(content, filename, mime) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Keyboard: Enter to analyze in paraphrase inputs
+document.addEventListener('DOMContentLoaded', () => {
+    loadState();
+    renderVocabLibrary();
+    renderParaLibrary();
+    renderParaFilters();
+
+    document.getElementById('paraphraseQ').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') analyzeParaphrase();
+    });
+    document.getElementById('paraphraseO').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') analyzeParaphrase();
+    });
+});
+</script>
+</body>
+</html>
