@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>雅思备考与语料终极工作台</title>
+    <title>雅思备考与语料工作台</title>
 
     <!-- ========== PWA: 主题与全屏配置 ========== -->
     <meta name="theme-color" content="#4f46e5">
     <meta name="color-scheme" content="light">
-    <meta name="description" content="雅思备考与语料终极工作台：AI 智能解析生词、分析真题同义替换、词库管理与 Anki 导出">
+    <meta name="description" content="雅思备考与语料工作台：AI 智能解析生词、分析真题同义替换、词库管理与 Anki 导出">
 
     <!-- iOS PWA: 添加到主屏幕后无地址栏全屏运行 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -60,17 +60,24 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
         .modal-overlay { background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); }
+        /* PWA 安全区适配：灵动岛 / 刘海 / 状态栏 / Home 指示条 */
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-left { padding-left: env(safe-area-inset-left); }
+        .safe-right { padding-right: env(safe-area-inset-right); }
+        /* Toast 避开 Home 指示条 */
+        #toast { bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important; }
     </style>
 </head>
 <body class="min-h-screen">
 
 <!-- ========== Header ========== -->
-<header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+<header class="bg-white border-b border-gray-200 sticky top-0 z-30 safe-top safe-left safe-right">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-14">
             <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">IE</div>
-                <h1 class="text-base font-semibold text-gray-900 hidden sm:block">雅思备考与语料终极工作台</h1>
+                <h1 class="text-base font-semibold text-gray-900 hidden sm:block">雅思备考与语料工作台</h1>
                 <h1 class="text-sm font-semibold text-gray-900 sm:hidden">IELTS Command Center</h1>
             </div>
             <div class="flex items-center gap-3">
@@ -332,7 +339,7 @@
         </div>
 
         <!-- About -->
-        <div class="text-center mt-6 pb-4">
+        <div class="text-center mt-6 pb-4 safe-bottom">
             <p class="text-xs text-gray-300">IELTS Exam & Vocabulary Command Center · 本地存储 + GitHub Gist 云同步</p>
         </div>
     </div>
