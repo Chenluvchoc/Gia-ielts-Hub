@@ -31,6 +31,11 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
 
+    <!-- 防止 PWA / 浏览器缓存旧版应用 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -398,7 +403,7 @@ function saveVocab() { LS.set('ielts_vocab', state.vocab); tryAutoSync(); }
 function saveParaphrases() { LS.set('ielts_paraphrases', state.paraphrases); tryAutoSync(); }
 
 // ==================== API Call ====================
-async function callLLM(userPrompt, systemPrompt) {
+async function callLLMOnce(userPrompt, systemPrompt) {
     const { apiBaseUrl, apiKey, modelName, systemPromptExtra } = state.settings;
     if (!apiBaseUrl || !apiKey || !modelName) {
         throw new Error('请先在设置中配置 API 地址、密钥与模型名称');
@@ -434,6 +439,40 @@ async function callLLM(userPrompt, systemPrompt) {
     return content;
 }
 
+// Network-level error → friendly message
+function friendlyNetworkError(e) {
+    if (e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
+        return new Error(
+            '网络连接失败（Failed to fetch）\n' +
+            '可能原因：\n' +
+            '1. API 服务器临时不可用（稍后重试）\n' +
+            '2. 你的网络/DNS 无法访问该域名\n' +
+            '3. 浏览器缓存了旧版应用（请清除缓存或强制刷新）\n' +
+            '提示：可在设置中点「测试连接」诊断'
+        );
+    }
+    return e;
+}
+
+// Call LLM with auto-retry on network errors
+async function callLLM(userPrompt, systemPrompt) {
+    try {
+        return await callLLMOnce(userPrompt, systemPrompt);
+    } catch (e) {
+        // Auto-retry once for network-level errors (transient failures)
+        if (e instanceof TypeError && e.message.includes('Failed to fetch')) {
+            console.log('[LLM] Network error, retrying once...');
+            await new Promise(r => setTimeout(r, 1500));
+            try {
+                return await callLLMOnce(userPrompt, systemPrompt);
+            } catch (e2) {
+                throw friendlyNetworkError(e2);
+            }
+        }
+        throw e;
+    }
+}
+
 function parseJSON(text) {
     try { return JSON.parse(text); }
     catch {
@@ -452,7 +491,7 @@ async function callLLMSafe(userPrompt, systemPrompt) {
         if (e.name === 'TimeoutError' || e.name === 'AbortError') {
             throw new Error('请求超时（60秒），请检查网络或 API 服务状态');
         }
-        throw e;
+        throw friendlyNetworkError(e);
     }
 }
 
@@ -914,14 +953,27 @@ async function testConnection() {
     if (!state.settings.apiKey) { showToast('请先保存配置', 'warn'); return; }
     const btn = document.getElementById('testConnBtn');
     const result = document.getElementById('connResult');
-    btn.disabled = true; btn.textContent = '测试中…'; result.innerHTML = '<span class="spinner"></span>';
+    btn.disabled = true; btn.textContent = '测试中…';
+    result.innerHTML = '<span class="text-gray-400 text-xs">正在连接...</span>';
 
     try {
+        const t0 = Date.now();
         const raw = await callLLMSafe('请回复"连接成功"四个字。', '你是一个测试助手。');
-        result.innerHTML = `<span class="text-green-600 text-xs">✓ 连接成功</span>`;
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+        result.innerHTML = `<span class="text-green-600 text-xs">✓ 连接成功（${elapsed}s）</span>`;
         showToast('连接成功', 'success');
     } catch (e) {
-        result.innerHTML = `<span class="text-red-500 text-xs">✗ ${escapeHtml(e.message.substring(0, 60))}</span>`;
+        let msg = e.message.substring(0, 120);
+        // Provide extra hint for common errors
+        let hint = '';
+        if (msg.includes('Failed to fetch') || msg.includes('网络连接失败')) {
+            hint = '<br><span class="text-gray-400 text-xs">→ 请尝试：清除浏览器缓存 / 强制刷新页面 / 检查网络</span>';
+        } else if (msg.includes('401') || msg.includes('403')) {
+            hint = '<br><span class="text-gray-400 text-xs">→ API Key 无效或已过期，请检查</span>';
+        } else if (msg.includes('404')) {
+            hint = '<br><span class="text-gray-400 text-xs">→ URL 或模型名称有误</span>';
+        }
+        result.innerHTML = `<span class="text-red-500 text-xs">✗ ${escapeHtml(msg)}${hint}</span>`;
     } finally {
         btn.disabled = false; btn.textContent = '测试连接';
     }
