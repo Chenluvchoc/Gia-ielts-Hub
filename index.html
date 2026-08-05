@@ -74,6 +74,10 @@
                 <h1 class="text-sm font-semibold text-gray-900 sm:hidden">IELTS Command Center</h1>
             </div>
             <div class="flex items-center gap-3">
+                <span id="syncIndicator" class="hidden items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-600">
+                    <svg class="w-3 h-3 animate-spin hidden" id="syncSpinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span id="syncIndicatorText">已同步</span>
+                </span>
                 <span id="apiStatusBadge" class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">未配置 API</span>
                 <button onclick="switchTab('settings')" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -313,11 +317,14 @@
                     <button onclick="syncFromCloud()" id="syncDownBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-4 py-2 rounded-lg transition">⬇ 从云端恢复</button>
                     <button onclick="saveSyncSettings()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-4 py-2 rounded-lg transition">保存 Token</button>
                 </div>
-                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                <label class="flex items-center gap-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg cursor-pointer">
                     <input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync()" class="w-4 h-4 rounded text-indigo-600">
-                    <div>
-                        <p class="text-sm font-medium text-gray-700">自动同步</p>
-                        <p class="text-xs text-gray-400">每次添加/删除词库时自动上传到云端</p>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                            自动同步
+                            <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-600 text-white">推荐</span>
+                        </p>
+                        <p class="text-xs text-gray-400">开启后，每次添加/删除词库或同义替换时自动上传云端，无需手动点击</p>
                     </div>
                 </label>
                 <div id="syncStatus" class="text-xs hidden"></div>
@@ -1077,12 +1084,23 @@ function loadSyncUI() {
     document.getElementById('githubToken').value = cfg.token || '';
     document.getElementById('autoSyncToggle').checked = cfg.autoSync || false;
     updateSyncBadge();
+    // Show sync indicator if auto-sync is on and token exists
+    if (cfg.autoSync && cfg.token) {
+        showSyncIndicator('synced');
+    }
 }
 
 function saveSyncSettings() {
     const token = document.getElementById('githubToken').value.trim();
     LS.set('ielts_sync_token', token);
     updateSyncBadge();
+    const cfg = getSyncConfig();
+    if (cfg.autoSync && cfg.token) {
+        showSyncIndicator('synced');
+    } else if (!cfg.token) {
+        document.getElementById('syncIndicator').classList.add('hidden');
+        document.getElementById('syncIndicator').classList.remove('flex');
+    }
     showToast(token ? 'Token 已保存' : 'Token 已清除', 'success');
 }
 
@@ -1131,13 +1149,14 @@ async function getCloudFileSha(token) {
     return null;
 }
 
-async function syncToCloud() {
+async function syncToCloud(silent) {
     const cfg = getSyncConfig();
-    if (!cfg.token) { showToast('请先填写并保存 GitHub Token', 'warn'); return; }
+    if (!cfg.token) { if (!silent) showToast('请先填写并保存 GitHub Token', 'warn'); return; }
 
     const btn = document.getElementById('syncUpBtn');
-    btn.disabled = true; btn.textContent = '上传中…';
+    if (!silent) { btn.disabled = true; btn.textContent = '上传中…'; }
     setSyncStatus('正在上传数据到 GitHub 仓库…', 'info');
+    showSyncIndicator('syncing');
 
     try {
         const content = btoa(unescape(encodeURIComponent(getCloudData())));
@@ -1167,12 +1186,37 @@ async function syncToCloud() {
         updateSyncBadge();
         const count = state.vocab.length + state.paraphrases.length;
         setSyncStatus(`✓ 已上传 ${count} 条数据到仓库（${new Date().toLocaleTimeString('zh-CN')}）`, 'success');
-        showToast('数据已同步到云端', 'success');
+        showSyncIndicator('synced');
+        if (!silent) showToast('数据已同步到云端', 'success');
     } catch (e) {
         setSyncStatus(`✗ ${e.message.substring(0, 80)}`, 'error');
+        showSyncIndicator('error');
         showToast('同步失败: ' + e.message.substring(0, 40), 'error');
     } finally {
-        btn.disabled = false; btn.textContent = '☁ 上传到云端';
+        if (!silent) { btn.disabled = false; btn.textContent = '☁ 上传到云端'; }
+    }
+}
+
+function showSyncIndicator(state) {
+    const el = document.getElementById('syncIndicator');
+    const spinner = document.getElementById('syncSpinner');
+    const text = document.getElementById('syncIndicatorText');
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+
+    if (state === 'syncing') {
+        el.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600';
+        spinner.classList.remove('hidden');
+        text.textContent = '同步中…';
+    } else if (state === 'synced') {
+        el.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-600';
+        spinner.classList.add('hidden');
+        text.textContent = '☁ 已同步';
+    } else if (state === 'error') {
+        el.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-50 text-red-500';
+        spinner.classList.add('hidden');
+        text.textContent = '同步失败';
     }
 }
 
@@ -1219,7 +1263,21 @@ async function syncFromCloud() {
 function toggleAutoSync() {
     const enabled = document.getElementById('autoSyncToggle').checked;
     LS.set('ielts_auto_sync', enabled);
-    showToast(enabled ? '自动同步已开启' : '自动同步已关闭', 'success');
+    if (enabled) {
+        const cfg = getSyncConfig();
+        if (cfg.token) {
+            showSyncIndicator('synced');
+            showToast('自动同步已开启，数据变更将自动上传', 'success');
+        } else {
+            showToast('请先填写并保存 GitHub Token', 'warn');
+            document.getElementById('autoSyncToggle').checked = false;
+            LS.set('ielts_auto_sync', false);
+        }
+    } else {
+        document.getElementById('syncIndicator').classList.add('hidden');
+        document.getElementById('syncIndicator').classList.remove('flex');
+        showToast('自动同步已关闭', 'success');
+    }
 }
 
 let _autoSyncTimer = null;
@@ -1227,7 +1285,7 @@ function tryAutoSync() {
     const cfg = getSyncConfig();
     if (!cfg.autoSync || !cfg.token) return;
     clearTimeout(_autoSyncTimer);
-    _autoSyncTimer = setTimeout(() => { syncToCloud(); }, 2000);
+    _autoSyncTimer = setTimeout(() => { syncToCloud(true); }, 1500);
 }
 
 // Keyboard: Enter to analyze in paraphrase inputs
