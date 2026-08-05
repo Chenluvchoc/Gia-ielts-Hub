@@ -1052,22 +1052,35 @@ function autoParseConfig() {
             const cfg = JSON.parse(raw);
             const url = cfg.url || cfg.apiBaseUrl || cfg.base_url || '';
             const key = cfg.key || cfg.apiKey || cfg.api_key || '';
+            const model = cfg.model || cfg.modelName || '';
             if (url && key) {
+                // Always fill all fields (overwrite even if already have values)
                 document.getElementById('apiBaseUrl').value = url;
                 document.getElementById('apiKey').value = key;
-                if (!document.getElementById('modelName').value) {
-                    const suggestedModel = (url.includes('tianyuai') || url.includes('openai')) ? 'gpt-5.4-mini' : (cfg.model || 'gpt-5.4-mini');
-                    document.getElementById('modelName').value = suggestedModel;
-                }
+                const suggestedModel = model || ((url.includes('tianyuai') || url.includes('openai')) ? 'gpt-5.4-mini' : 'gpt-5.4-mini');
+                document.getElementById('modelName').value = suggestedModel;
                 saveSettings();
                 resultEl.classList.remove('hidden');
-                resultEl.innerHTML = '✓ 已识别：' + escapeHtml(url) + ' — 已自动保存';
+                resultEl.className = 'text-xs text-green-600 mt-1.5';
+                resultEl.innerHTML = '✓ 已识别并自动保存：' + escapeHtml(url) + ' · 模型：' + escapeHtml(suggestedModel);
+                // Highlight filled fields with brief animation
+                ['apiBaseUrl', 'apiKey', 'modelName'].forEach(id => {
+                    const el = document.getElementById(id);
+                    el.classList.add('ring-2', 'ring-green-400', 'bg-green-50');
+                    setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-green-400', 'bg-green-50');
+                    }, 1500);
+                });
+                showToast('API 配置已自动识别并保存', 'success');
             } else {
                 resultEl.classList.remove('hidden');
+                resultEl.className = 'text-xs text-amber-600 mt-1.5';
                 resultEl.innerHTML = '⚠ JSON 缺少 url 或 key 字段';
             }
         } catch (e) {
-            resultEl.classList.add('hidden');
+            resultEl.classList.remove('hidden');
+            resultEl.className = 'text-xs text-red-500 mt-1.5';
+            resultEl.innerHTML = '✗ JSON 格式错误：' + escapeHtml(e.message.substring(0, 50));
         }
     }, 400);
 }
