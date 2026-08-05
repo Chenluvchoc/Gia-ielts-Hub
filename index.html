@@ -31,9 +31,6 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
 
-    <!-- iOS 启动画面占位（深色背景，避免白闪） -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,7 +75,7 @@
             <div class="flex items-center gap-2.5">
                 <img src="icon.jpg" alt="logo" class="w-8 h-8 rounded-lg object-cover">
                 <h1 class="text-base font-semibold text-gray-900 hidden sm:block">雅思备考与语料工作台</h1>
-                <h1 class="text-sm font-semibold text-gray-900 sm:hidden">IELTS Command Center</h1>
+                <h1 class="text-sm font-semibold text-gray-900 sm:hidden">雅思工作台</h1>
             </div>
             <div class="flex items-center gap-3">
                 <span id="syncIndicator" class="hidden items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-600">
@@ -340,7 +337,7 @@
 
         <!-- About -->
         <div class="text-center mt-6 pb-4 safe-bottom">
-            <p class="text-xs text-gray-300">IELTS Exam & Vocabulary Command Center · 本地存储 + GitHub Gist 云同步</p>
+            <p class="text-xs text-gray-300">雅思备考与语料工作台 · 本地存储 + GitHub 仓库云同步</p>
         </div>
     </div>
 </section>
@@ -422,6 +419,7 @@ async function callLLM(userPrompt, systemPrompt) {
             'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({ model: modelName, messages, temperature: 0.3 }),
+        signal: AbortSignal.timeout(60000),
     });
 
     if (!res.ok) {
@@ -443,6 +441,18 @@ function parseJSON(text) {
         const m = text.match(/\[[\s\S]*\]/) || text.match(/\{[\s\S]*\}/);
         if (m) { try { return JSON.parse(m[0]); } catch {} }
         throw new Error('JSON 解析失败，请检查 API 返回格式');
+    }
+}
+
+// User-friendly wrapper for LLM calls with timeout handling
+async function callLLMSafe(userPrompt, systemPrompt) {
+    try {
+        return await callLLM(userPrompt, systemPrompt);
+    } catch (e) {
+        if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+            throw new Error('请求超时（60秒），请检查网络或 API 服务状态');
+        }
+        throw e;
     }
 }
 
@@ -468,7 +478,7 @@ async function analyzeVocabulary() {
     btn.disabled = true; btnText.innerHTML = '<span class="spinner"></span> 解析中…';
 
     try {
-        const raw = await callLLM(`请分析以下雅思生词/短语：\n${input}`, VOCAB_SYSTEM);
+        const raw = await callLLMSafe(`请分析以下雅思生词/短语：\n${input}`, VOCAB_SYSTEM);
         const results = parseJSON(raw);
         if (!Array.isArray(results)) { state.aiResult = [results]; } else { state.aiResult = results; }
         renderAIResult();
@@ -701,7 +711,7 @@ async function analyzeParaphrase() {
     btn.disabled = true; btnText.innerHTML = '<span class="spinner"></span> 分析中…';
 
     try {
-        const raw = await callLLM(
+        const raw = await callLLMSafe(
             `请分析以下两个表达之间的同义替换关系：\n题目/选项表达：${q}\n真题原文表达：${o}`,
             PARA_SYSTEM
         );
@@ -907,7 +917,7 @@ async function testConnection() {
     btn.disabled = true; btn.textContent = '测试中…'; result.innerHTML = '<span class="spinner"></span>';
 
     try {
-        const raw = await callLLM('请回复"连接成功"四个字。', '你是一个测试助手。');
+        const raw = await callLLMSafe('请回复"连接成功"四个字。', '你是一个测试助手。');
         result.innerHTML = `<span class="text-green-600 text-xs">✓ 连接成功</span>`;
         showToast('连接成功', 'success');
     } catch (e) {
@@ -1220,7 +1230,7 @@ async function syncToCloud(silent) {
     }
 }
 
-function showSyncIndicator(state) {
+function showSyncIndicator(syncState) {
     const el = document.getElementById('syncIndicator');
     const spinner = document.getElementById('syncSpinner');
     const text = document.getElementById('syncIndicatorText');
@@ -1228,15 +1238,15 @@ function showSyncIndicator(state) {
     el.classList.remove('hidden');
     el.classList.add('flex');
 
-    if (state === 'syncing') {
+    if (syncState === 'syncing') {
         el.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600';
         spinner.classList.remove('hidden');
         text.textContent = '同步中…';
-    } else if (state === 'synced') {
+    } else if (syncState === 'synced') {
         el.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-600';
         spinner.classList.add('hidden');
         text.textContent = '☁ 已同步';
-    } else if (state === 'error') {
+    } else if (syncState === 'error') {
         el.className = 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-50 text-red-500';
         spinner.classList.add('hidden');
         text.textContent = '同步失败';
@@ -1326,6 +1336,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('paraphraseO').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') analyzeParaphrase();
+    });
+    document.getElementById('vocabInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); analyzeVocabulary(); }
     });
 });
 </script>
