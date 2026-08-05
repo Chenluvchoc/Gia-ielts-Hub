@@ -247,7 +247,7 @@
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-600 mb-1.5 block">Model Name</label>
-                    <input type="text" id="modelName" placeholder="gpt-4o-mini" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
+                    <input type="text" id="modelName" placeholder="gpt-5.4-mini" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-600 mb-1.5 block">System Prompt 补充（可选）</label>
@@ -292,9 +292,41 @@
             </div>
         </div>
 
+        <!-- Cloud Sync -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mt-5">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <h2 class="text-sm font-semibold text-gray-800">云端同步（GitHub Gist）</h2>
+                <span id="syncBadge" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 ml-auto">未连接</span>
+            </div>
+            <p class="text-xs text-gray-400 mb-4">将词库与配置同步到你的 GitHub 私有 Gist，换设备、清缓存、更新应用都不会丢数据。</p>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-medium text-gray-600 mb-1.5 block">GitHub Token（需要 gist 权限）</label>
+                    <input type="password" id="githubToken" placeholder="ghp_..." class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition font-mono">
+                    <p class="text-xs text-gray-400 mt-1">前往 <a href="https://github.com/settings/tokens/new" target="_blank" class="text-indigo-500 hover:underline">github.com/settings/tokens</a> 创建，勾选 <code class="text-xs bg-gray-100 px-1 rounded">gist</code> 权限</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="syncToCloud()" id="syncUpBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition">☁ 上传到云端</button>
+                    <button onclick="syncFromCloud()" id="syncDownBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-4 py-2 rounded-lg transition">⬇ 从云端恢复</button>
+                    <button onclick="saveSyncSettings()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-4 py-2 rounded-lg transition">保存 Token</button>
+                </div>
+                <label class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                    <input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync()" class="w-4 h-4 rounded text-indigo-600">
+                    <div>
+                        <p class="text-sm font-medium text-gray-700">自动同步</p>
+                        <p class="text-xs text-gray-400">每次添加/删除词库时自动上传到云端</p>
+                    </div>
+                </label>
+                <div id="syncStatus" class="text-xs hidden"></div>
+            </div>
+        </div>
+
         <!-- About -->
         <div class="text-center mt-6 pb-4">
-            <p class="text-xs text-gray-300">IELTS Exam & Vocabulary Command Center · 数据存储于本地浏览器</p>
+            <p class="text-xs text-gray-300">IELTS Exam & Vocabulary Command Center · 本地存储 + GitHub Gist 云同步</p>
         </div>
     </div>
 </section>
@@ -351,8 +383,8 @@ function loadState() {
     updateApiBadge();
 }
 
-function saveVocab() { LS.set('ielts_vocab', state.vocab); }
-function saveParaphrases() { LS.set('ielts_paraphrases', state.paraphrases); }
+function saveVocab() { LS.set('ielts_vocab', state.vocab); tryAutoSync(); }
+function saveParaphrases() { LS.set('ielts_paraphrases', state.paraphrases); tryAutoSync(); }
 
 // ==================== API Call ====================
 async function callLLM(userPrompt, systemPrompt) {
@@ -1014,7 +1046,8 @@ function autoParseConfig() {
                 document.getElementById('apiBaseUrl').value = url;
                 document.getElementById('apiKey').value = key;
                 if (!document.getElementById('modelName').value) {
-                    document.getElementById('modelName').value = cfg.model || 'gpt-4o-mini';
+                    const suggestedModel = (url.includes('tianyuai') || url.includes('openai')) ? 'gpt-5.4-mini' : (cfg.model || 'gpt-5.4-mini');
+                    document.getElementById('modelName').value = suggestedModel;
                 }
                 saveSettings();
                 resultEl.classList.remove('hidden');
@@ -1029,9 +1062,188 @@ function autoParseConfig() {
     }, 400);
 }
 
+// ==================== GitHub Gist Cloud Sync ====================
+const GIST_FILENAME = 'ielts-hub-data.json';
+const GIST_DESC = 'Gia IELTS Hub - Cloud Backup';
+
+function getSyncConfig() {
+    return {
+        token: LS.get('ielts_gist_token', ''),
+        gistId: LS.get('ielts_gist_id', ''),
+        autoSync: LS.get('ielts_auto_sync', false),
+    };
+}
+
+function loadSyncUI() {
+    const cfg = getSyncConfig();
+    document.getElementById('githubToken').value = cfg.token || '';
+    document.getElementById('autoSyncToggle').checked = cfg.autoSync || false;
+    updateSyncBadge();
+}
+
+function saveSyncSettings() {
+    const token = document.getElementById('githubToken').value.trim();
+    LS.set('ielts_gist_token', token);
+    updateSyncBadge();
+    showToast(token ? 'Token 已保存' : 'Token 已清除', 'success');
+}
+
+function updateSyncBadge() {
+    const cfg = getSyncConfig();
+    const badge = document.getElementById('syncBadge');
+    if (cfg.token && cfg.gistId) {
+        badge.className = 'text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600 ml-auto';
+        badge.textContent = '已连接';
+    } else if (cfg.token) {
+        badge.className = 'text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 ml-auto';
+        badge.textContent = 'Token 已设';
+    } else {
+        badge.className = 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 ml-auto';
+        badge.textContent = '未连接';
+    }
+}
+
+function getCloudData() {
+    return JSON.stringify({
+        vocab: state.vocab,
+        paraphrases: state.paraphrases,
+        settings: state.settings,
+        syncedAt: new Date().toISOString(),
+    }, null, 2);
+}
+
+function setSyncStatus(msg, type) {
+    const el = document.getElementById('syncStatus');
+    el.classList.remove('hidden');
+    const colors = { success: 'text-green-600', error: 'text-red-500', info: 'text-gray-500' };
+    el.className = `text-xs ${colors[type] || 'text-gray-500'}`;
+    el.textContent = msg;
+}
+
+async function syncToCloud() {
+    const cfg = getSyncConfig();
+    if (!cfg.token) { showToast('请先填写并保存 GitHub Token', 'warn'); return; }
+
+    const btn = document.getElementById('syncUpBtn');
+    btn.disabled = true; btn.textContent = '上传中…';
+    setSyncStatus('正在上传数据到 GitHub Gist…', 'info');
+
+    try {
+        const content = getCloudData();
+        const body = {
+            description: GIST_DESC,
+            files: { [GIST_FILENAME]: { content } },
+            public: false,
+        };
+
+        let url, method;
+        if (cfg.gistId) {
+            url = `https://api.github.com/gists/${cfg.gistId}`;
+            method = 'PATCH';
+        } else {
+            url = 'https://api.github.com/gists';
+            method = 'POST';
+        }
+
+        const res = await fetch(url, {
+            method,
+            headers: {
+                'Authorization': `token ${cfg.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(`GitHub API 错误 (${res.status}): ${err.substring(0, 100)}`);
+        }
+
+        const data = await res.json();
+        if (!cfg.gistId) {
+            LS.set('ielts_gist_id', data.id);
+        }
+
+        updateSyncBadge();
+        const count = state.vocab.length + state.paraphrases.length;
+        setSyncStatus(`✓ 已上传 ${count} 条数据（${new Date().toLocaleTimeString('zh-CN')}）`, 'success');
+        showToast('数据已同步到云端', 'success');
+    } catch (e) {
+        setSyncStatus(`✗ ${e.message.substring(0, 80)}`, 'error');
+        showToast('同步失败: ' + e.message.substring(0, 40), 'error');
+    } finally {
+        btn.disabled = false; btn.textContent = '☁ 上传到云端';
+    }
+}
+
+async function syncFromCloud() {
+    const cfg = getSyncConfig();
+    if (!cfg.token) { showToast('请先填写并保存 GitHub Token', 'warn'); return; }
+    if (!cfg.gistId) { showToast('尚未上传过数据，请先点击「上传到云端」', 'warn'); return; }
+
+    const btn = document.getElementById('syncDownBtn');
+    btn.disabled = true; btn.textContent = '恢复中…';
+    setSyncStatus('正在从云端拉取数据…', 'info');
+
+    try {
+        const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+            headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' },
+        });
+
+        if (!res.ok) throw new Error(`GitHub API 错误 (${res.status})`);
+
+        const data = await res.json();
+        const file = data.files && data.files[GIST_FILENAME];
+        if (!file) throw new Error('云端未找到数据文件');
+
+        const cloud = JSON.parse(file.content);
+
+        showConfirm('从云端恢复', `云端有 ${cloud.vocab?.length || 0} 条词库、${cloud.paraphrases?.length || 0} 条同义替换记录。将覆盖本地数据，确定继续吗？`, () => {
+            if (cloud.vocab) { state.vocab = cloud.vocab; LS.set('ielts_vocab', state.vocab); }
+            if (cloud.paraphrases) { state.paraphrases = cloud.paraphrases; LS.set('ielts_paraphrases', state.paraphrases); }
+            if (cloud.settings) {
+                state.settings = cloud.settings;
+                LS.set('ielts_settings', state.settings);
+                document.getElementById('apiBaseUrl').value = state.settings.apiBaseUrl || '';
+                document.getElementById('apiKey').value = state.settings.apiKey || '';
+                document.getElementById('modelName').value = state.settings.modelName || '';
+                document.getElementById('systemPromptExtra').value = state.settings.systemPromptExtra || '';
+                updateApiBadge();
+            }
+            renderVocabLibrary();
+            renderParaLibrary();
+            renderParaFilters();
+            const count = (cloud.vocab?.length || 0) + (cloud.paraphrases?.length || 0);
+            setSyncStatus(`✓ 已恢复 ${count} 条数据`, 'success');
+            showToast(`已从云端恢复 ${count} 条数据`, 'success');
+        });
+    } catch (e) {
+        setSyncStatus(`✗ ${e.message.substring(0, 80)}`, 'error');
+        showToast('恢复失败: ' + e.message.substring(0, 40), 'error');
+    } finally {
+        btn.disabled = false; btn.textContent = '⬇ 从云端恢复';
+    }
+}
+
+function toggleAutoSync() {
+    const enabled = document.getElementById('autoSyncToggle').checked;
+    LS.set('ielts_auto_sync', enabled);
+    showToast(enabled ? '自动同步已开启' : '自动同步已关闭', 'success');
+}
+
+let _autoSyncTimer = null;
+function tryAutoSync() {
+    const cfg = getSyncConfig();
+    if (!cfg.autoSync || !cfg.token) return;
+    clearTimeout(_autoSyncTimer);
+    _autoSyncTimer = setTimeout(() => { syncToCloud(); }, 2000);
+}
+
 // Keyboard: Enter to analyze in paraphrase inputs
 document.addEventListener('DOMContentLoaded', () => {
     loadState();
+    loadSyncUI();
     renderVocabLibrary();
     renderParaLibrary();
     renderParaFilters();
