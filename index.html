@@ -403,19 +403,39 @@ function saveVocab() { LS.set('ielts_vocab', state.vocab); tryAutoSync(); }
 function saveParaphrases() { LS.set('ielts_paraphrases', state.paraphrases); tryAutoSync(); }
 
 // ==================== API Call ====================
-async function callLLMOnce(userPrompt, systemPrompt) {
-    const { apiBaseUrl, apiKey, modelName, systemPromptExtra } = state.settings;
-    if (!apiBaseUrl || !apiKey || !modelName) {
-        throw new Error('请先在设置中配置 API 地址、密钥与模型名称');
+
+// 通过 Vercel 服务端代理调用（绕过浏览器 DNS/CORS 问题）
+async function callLLMViaProxy(apiBaseUrl, apiKey, modelName, messages, systemPromptExtra) {
+    const proxyUrl = '/api/chat';
+    const res = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            api_url: apiBaseUrl,
+            api_key: apiKey,
+            body: { model: modelName, messages, temperature: 0.3 },
+        }),
+        signal: AbortSignal.timeout(60000),
+    });
+
+    if (!res.ok) {
+        const errText = await res.text();
+        let errMsg = errText.substring(0, 200);
+        try { errMsg = JSON.parse(errText).error || errMsg; } catch {}
+        throw new Error(`代理请求失败 (${res.status}): ${errMsg}`);
     }
+    const data = await res.json();
+    let content = data.choices?.[0]?.message?.content || '';
+    if (!content) throw new Error('API 返回内容为空');
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    return content;
+}
+
+// 浏览器直连 API
+async function callLLMDirect(apiBaseUrl, apiKey, modelName, messages) {
     let url = apiBaseUrl.replace(/\/+$/, '');
-    // Auto-append /v1 if missing (OpenAI-compatible APIs need it)
     if (!url.match(/\/v\d+$/)) url += '/v1';
     const fullUrl = url + '/chat/completions';
-    const messages = [];
-    const sys = (systemPrompt || '') + (systemPromptExtra ? '\n\n' + systemPromptExtra : '');
-    if (sys) messages.push({ role: 'system', content: sys });
-    messages.push({ role: 'user', content: userPrompt });
 
     const res = await fetch(fullUrl, {
         method: 'POST',
@@ -434,9 +454,22 @@ async function callLLMOnce(userPrompt, systemPrompt) {
     const data = await res.json();
     let content = data.choices?.[0]?.message?.content || '';
     if (!content) throw new Error('API 返回内容为空');
-    // Strip markdown code blocks
     content = content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
     return content;
+}
+
+async function callLLMOnce(userPrompt, systemPrompt) {
+    const { apiBaseUrl, apiKey, modelName, systemPromptExtra } = state.settings;
+    if (!apiBaseUrl || !apiKey || !modelName) {
+        throw new Error('请先在设置中配置 API 地址、密钥与模型名称');
+    }
+    const messages = [];
+    const sys = (systemPrompt || '') + (systemPromptExtra ? '\n\n' + systemPromptExtra : '');
+    if (sys) messages.push({ role: 'system', content: sys });
+    messages.push({ role: 'user', content: userPrompt });
+
+    // 优先走 Vercel 代理（更稳定，无 DNS/CORS 问题）
+    return await callLLMViaProxy(apiBaseUrl, apiKey, modelName, messages, systemPromptExtra);
 }
 
 // Network-level error → friendly message
