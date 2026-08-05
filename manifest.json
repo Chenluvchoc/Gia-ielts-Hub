@@ -1,5 +1,5 @@
 {
-  "name": "雅思备考与语料终极工作台",
+  "name": "雅思备考与语料工作台",
   "short_name": "雅思工作台",
   "description": "AI 驱动的雅思备考与语料管理工具：生词解析、真题同义替换、词库管理、Anki 导出。",
   "start_url": "./index.html",
