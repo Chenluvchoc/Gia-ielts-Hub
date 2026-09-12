@@ -1,0 +1,60 @@
+{
+  "vocab": [
+    {
+      "id": 1785874214126.6492,
+      "word": "transferable skills",
+      "pos": "学术名词",
+      "meaning": "可迁移技能",
+      "module": "写作",
+      "topic": "教育与就业",
+      "collocations": [
+        {
+          "en": "develop transferable skills",
+          "zh": "培养可迁移技能"
+        },
+        {
+          "en": "valuable transferable skills",
+          "zh": "有价值的可迁移技能"
+        },
+        {
+          "en": "transferable skills for the workplace",
+          "zh": "职场可迁移技能"
+        }
+      ],
+      "example": {
+        "en": "A university degree is useful, but transferable skills such as communication, teamwork, and problem-solving are often what employers value most.",
+        "zh": "大学学位很有用，但沟通、团队合作和解决问题等可迁移技能往往是雇主最看重的。"
+      },
+      "createdAt": "2026-08-04T20:10:14.126Z"
+    },
+    {
+      "id": 1785873979494.344,
+      "word": "welfare sevices",
+      "pos": "社会福利短语",
+      "meaning": "福利服务",
+      "module": "写作",
+      "topic": "社会福利",
+      "collocations": [
+        {
+          "en": "provide welfare services",
+          "zh": "提供福利服务"
+        },
+        {
+          "en": "access welfare services",
+          "zh": "获得福利服务"
+        },
+        {
+          "en": "fund welfare services",
+          "zh": "资助福利服务"
+        }
+      ],
+      "example": {
+        "en": "The government should allocate more resources to provide welfare services for low-income families and vulnerable groups.",
+        "zh": "政府应投入更多资源，为低收入家庭和弱势群体提供福利服务。"
+      },
+      "createdAt": "2026-08-04T20:06:19.494Z"
+    }
+  ],
+  "paraphrases": [],
+  "syncedAt": "2026-09-12T15:21:04.894Z"
+}
