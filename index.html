@@ -468,13 +468,30 @@ async function callLLMOnce(userPrompt, systemPrompt) {
     if (sys) messages.push({ role: 'system', content: sys });
     messages.push({ role: 'user', content: userPrompt });
 
-    // 优先走 Vercel 代理（更稳定，无 DNS/CORS 问题）
-    return await callLLMViaProxy(apiBaseUrl, apiKey, modelName, messages, systemPromptExtra);
+    // 优先走 Vercel 代理（更稳定，无 DNS/CORS 问题）；代理不可用时回退直连
+    try {
+        return await callLLMViaProxy(apiBaseUrl, apiKey, modelName, messages, systemPromptExtra);
+    } catch (e) {
+        if (e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
+            console.log('[LLM] Proxy unreachable, falling back to direct connection...');
+            return await callLLMDirect(apiBaseUrl, apiKey, modelName, messages);
+        }
+        throw e;
+    }
 }
 
 // Network-level error → friendly message
 function friendlyNetworkError(e) {
     if (e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
+        // Detect if app is not opened from Vercel (file:// or localhost = proxy unavailable)
+        const origin = location.origin || '';
+        const badOrigin = (location.protocol === 'file:' || origin.includes('localhost') || origin.includes('127.0.0.1'));
+        if (badOrigin) {
+            return new Error(
+                '网络连接失败：你当前不是通过正式网址打开本应用（' + (location.protocol === 'file:' ? '本地文件方式' : origin) + '），代理接口不可用\n' +
+                '请用浏览器打开 https://gia-ielts-hub.vercel.app 使用，数据已云端同步不会丢失'
+            );
+        }
         return new Error(
             '网络连接失败（Failed to fetch）\n' +
             '可能原因：\n' +
@@ -1013,14 +1030,19 @@ async function testConnection() {
         let msg = e.message.substring(0, 120);
         // Provide extra hint for common errors
         let hint = '';
-        if (msg.includes('Failed to fetch') || msg.includes('网络连接失败')) {
+        const origin = location.origin || '';
+        if (location.protocol === 'file:') {
+            hint = '<br><span class="text-red-400 text-xs">→ 你正在用「本地文件」方式打开应用，请改为浏览器访问 https://gia-ielts-hub.vercel.app</span>';
+        } else if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+            hint = '<br><span class="text-red-400 text-xs">→ 你正在用「本地开发地址」打开应用，请改为浏览器访问 https://gia-ielts-hub.vercel.app</span>';
+        } else if (msg.includes('Failed to fetch') || msg.includes('网络连接失败')) {
             hint = '<br><span class="text-gray-400 text-xs">→ 请尝试：清除浏览器缓存 / 强制刷新页面 / 检查网络</span>';
         } else if (msg.includes('401') || msg.includes('403')) {
             hint = '<br><span class="text-gray-400 text-xs">→ API Key 无效或已过期，请检查</span>';
-        } else if (msg.includes('404')) {
-            hint = '<br><span class="text-gray-400 text-xs">→ URL 或模型名称有误</span>';
+        } else if (msg.includes('model_not_found') || msg.includes('404')) {
+            hint = '<br><span class="text-gray-400 text-xs">→ 模型名称有误或已下架，应用会自动尝试切换可用模型</span>';
         }
-        result.innerHTML = `<span class="text-red-500 text-xs">✗ ${escapeHtml(msg)}${hint}</span>`;
+        result.innerHTML = `<span class="text-red-500 text-xs">✗ ${escapeHtml(msg.replace(/\n/g, ' '))}${hint}</span>`;
     } finally {
         btn.disabled = false; btn.textContent = '测试连接';
     }
