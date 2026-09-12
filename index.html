@@ -260,7 +260,7 @@
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-600 mb-1.5 block">Model Name</label>
-                    <input type="text" id="modelName" placeholder="gpt-5.4-mini" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
+                    <input type="text" id="modelName" placeholder="gpt-5.6-luna" class="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white transition">
                 </div>
                 <div>
                     <label class="text-xs font-medium text-gray-600 mb-1.5 block">System Prompt 补充（可选）</label>
@@ -500,6 +500,20 @@ async function callLLM(userPrompt, systemPrompt) {
                 return await callLLMOnce(userPrompt, systemPrompt);
             } catch (e2) {
                 throw friendlyNetworkError(e2);
+            }
+        }
+        // Auto-recover from model_not_found: detect an available model, save, retry
+        if (e.message && e.message.includes('model_not_found')) {
+            console.log('[LLM] Model not found, auto-detecting available model...');
+            const { apiBaseUrl, apiKey } = state.settings;
+            const newModel = await detectBestModel(apiBaseUrl, apiKey);
+            if (newModel && newModel !== state.settings.modelName) {
+                state.settings.modelName = newModel;
+                saveSettings();
+                const el = document.getElementById('modelName');
+                if (el) el.value = newModel;
+                showToast(`原模型已下架，自动切换为 ${newModel}`, 'success');
+                return await callLLMOnce(userPrompt, systemPrompt);
             }
         }
         throw e;
@@ -1144,9 +1158,32 @@ function escapeHtml(str) {
 
 // ==================== Auto-detect API Config JSON ====================
 let _autoConfigTimer = null;
+
+// Query available models for a key, pick the best text model
+async function detectBestModel(url, key) {
+    try {
+        let base = url.replace(/\/+$/, '');
+        if (!base.match(/\/v\d+$/)) base += '/v1';
+        const res = await fetch(base + '/models', {
+            headers: { 'Authorization': `Bearer ${key}` },
+            signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const ids = (data.data || []).map(m => m.id).filter(id => !/image|embed|audio|whisper|tts|dall/i.test(id));
+        if (!ids.length) return null;
+        // Prefer known fast/reliable text models in order
+        const preferred = ['gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.5', 'gpt-5.6-sol', 'gpt-4o-mini', 'gpt-4.1-mini'];
+        for (const p of preferred) {
+            if (ids.includes(p)) return p;
+        }
+        return ids[0];
+    } catch { return null; }
+}
+
 function autoParseConfig() {
     clearTimeout(_autoConfigTimer);
-    _autoConfigTimer = setTimeout(() => {
+    _autoConfigTimer = setTimeout(async () => {
         const raw = document.getElementById('autoConfigInput').value.trim();
         const resultEl = document.getElementById('autoConfigResult');
         if (!raw) { resultEl.classList.add('hidden'); return; }
@@ -1159,12 +1196,15 @@ function autoParseConfig() {
                 // Always fill all fields (overwrite even if already have values)
                 document.getElementById('apiBaseUrl').value = url;
                 document.getElementById('apiKey').value = key;
-                const suggestedModel = model || ((url.includes('tianyuai') || url.includes('openai')) ? 'gpt-5.4-mini' : 'gpt-5.4-mini');
-                document.getElementById('modelName').value = suggestedModel;
-                saveSettings();
                 resultEl.classList.remove('hidden');
+                resultEl.className = 'text-xs text-indigo-600 mt-1.5';
+                resultEl.innerHTML = '⏳ 已识别 URL 和 Key，正在探测可用模型…';
+                // Auto-detect best available model (unless JSON specifies one)
+                const detected = model || await detectBestModel(url, key) || 'gpt-5.6-luna';
+                document.getElementById('modelName').value = detected;
+                saveSettings();
                 resultEl.className = 'text-xs text-green-600 mt-1.5';
-                resultEl.innerHTML = '✓ 已识别并自动保存：' + escapeHtml(url) + ' · 模型：' + escapeHtml(suggestedModel);
+                resultEl.innerHTML = '✓ 已识别并自动保存：' + escapeHtml(url) + ' · 模型：' + escapeHtml(detected) + (model ? '' : '（自动探测）');
                 // Highlight filled fields with brief animation
                 ['apiBaseUrl', 'apiKey', 'modelName'].forEach(id => {
                     const el = document.getElementById(id);
