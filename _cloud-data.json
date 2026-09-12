@@ -1,5 +1,21 @@
 {
   "vocab": [],
-  "paraphrases": [],
-  "syncedAt": "2026-09-12T15:35:45.090Z"
+  "paraphrases": [
+    {
+      "type": "上下义词",
+      "rating": 2,
+      "explanation": "art form指艺术形式，范围较广；ritual指仪式或仪式性行为，通常属于文化活动，但在特定语境中可被视为一种具有艺术表现力的形式。因此二者并非严格同义，而是语境中的概念包含或交叉关系，需结合上下文判断，不能机械替换。",
+      "questionExpr": "art form",
+      "originalExpr": "ritual",
+      "relatedExpressions": [
+        "artistic practice",
+        "ceremonial practice",
+        "cultural expression"
+      ],
+      "examTip": "遇到宽泛概念与具体文化行为的对应时，要根据原文语境判断是上下义关系还是仅存在概念交叉。",
+      "id": 1789227285693.0144,
+      "createdAt": "2026-09-12T15:34:45.693Z"
+    }
+  ],
+  "syncedAt": "2026-09-12T15:36:44.996Z"
 }
