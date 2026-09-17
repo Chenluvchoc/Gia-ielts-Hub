@@ -468,13 +468,16 @@ async function callLLMOnce(userPrompt, systemPrompt) {
     if (sys) messages.push({ role: 'system', content: sys });
     messages.push({ role: 'user', content: userPrompt });
 
-    // 优先走 Vercel 代理（更稳定，无 DNS/CORS 问题）；代理不可用时回退直连
+    // 双通道：优先浏览器直连（快），网络层失败自动切 Vercel/WorkBuddy 代理
+    // 注意：只有网络层错误才切换；401/403/model_not_found 等真实 API 错误直接抛出
     try {
-        return await callLLMViaProxy(apiBaseUrl, apiKey, modelName, messages, systemPromptExtra);
+        return await callLLMDirect(apiBaseUrl, apiKey, modelName, messages);
     } catch (e) {
-        if (e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
-            console.log('[LLM] Proxy unreachable, falling back to direct connection...');
-            return await callLLMDirect(apiBaseUrl, apiKey, modelName, messages);
+        const isNetworkError = (e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')))
+            || e.name === 'TimeoutError' || e.name === 'AbortError';
+        if (isNetworkError) {
+            console.log('[LLM] Direct connection failed, falling back to proxy...');
+            return await callLLMViaProxy(apiBaseUrl, apiKey, modelName, messages, systemPromptExtra);
         }
         throw e;
     }
@@ -482,23 +485,21 @@ async function callLLMOnce(userPrompt, systemPrompt) {
 
 // Network-level error → friendly message
 function friendlyNetworkError(e) {
-    if (e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'))) {
-        // Detect if app is not opened from Vercel (file:// or localhost = proxy unavailable)
+    const isNetErr = e instanceof TypeError && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError'));
+    const isProxyFail = e.message && e.message.includes('代理请求失败');
+    if (isNetErr || isProxyFail) {
+        // Detect if app is not opened from a proper host (file:// or localhost = proxy unavailable)
         const origin = location.origin || '';
         const badOrigin = (location.protocol === 'file:' || origin.includes('localhost') || origin.includes('127.0.0.1'));
         if (badOrigin) {
             return new Error(
                 '网络连接失败：你当前不是通过正式网址打开本应用（' + (location.protocol === 'file:' ? '本地文件方式' : origin) + '），代理接口不可用\n' +
-                '请用浏览器打开 https://gia-ielts-hub.vercel.app 使用，数据已云端同步不会丢失'
+                '请用浏览器打开正式发布的网址使用，数据已云端同步不会丢失'
             );
         }
         return new Error(
-            '网络连接失败（Failed to fetch）\n' +
-            '可能原因：\n' +
-            '1. API 服务器临时不可用（稍后重试）\n' +
-            '2. 你的网络/DNS 无法访问该域名\n' +
-            '3. 浏览器缓存了旧版应用（请清除缓存或强制刷新）\n' +
-            '提示：可在设置中点「测试连接」诊断'
+            '直连和代理通道都失败了，API 服务可能临时不可用（稍等几分钟重试）\n' +
+            '也可以检查：1. API 站是否正常 2. 网络/DNS 是否正常 3. 设置里点「测试连接」诊断'
         );
     }
     return e;
