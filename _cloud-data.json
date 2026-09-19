@@ -1,30 +1,13 @@
 {
-  "vocab": [
-    {
-      "id": 1789239502712.7297,
-      "word": "solar Eclipse",
-      "pos": "学术名词",
-      "meaning": "日食",
-      "module": "阅读",
-      "topic": "科技与环境",
-      "collocations": [
-        {
-          "en": "observe a solar eclipse",
-          "zh": "观测日食"
-        },
-        {
-          "en": "solar eclipse phenomenon",
-          "zh": "日食现象"
-        }
-      ],
-      "example": {
-        "en": "A total solar eclipse is a rare astronomical event that attracts scientists and tourists from around the world.",
-        "zh": "日全食是一种罕见的天文现象，吸引着来自世界各地的科学家和游客。"
-      },
-      "createdAt": "2026-09-12T18:58:22.712Z"
-    }
-  ],
+  "vocab": [],
   "paraphrases": [
+    {
+      "0": "be obtained using",
+      "1": "be accumulated through",
+      "2": "be assembled by",
+      "id": 1789798186716.5413,
+      "createdAt": "2026-09-19T06:09:46.716Z"
+    },
     {
       "type": "上下义词",
       "rating": 2,
@@ -41,5 +24,5 @@
       "createdAt": "2026-09-12T15:34:45.693Z"
     }
   ],
-  "syncedAt": "2026-09-12T18:58:24.215Z"
+  "syncedAt": "2026-09-19T06:09:48.221Z"
 }
