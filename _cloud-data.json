@@ -1,5 +1,33 @@
 {
-  "vocab": [],
+  "vocab": [
+    {
+      "id": 1790251775709.2832,
+      "word": "monastery",
+      "pos": "学术名词",
+      "meaning": "修道院",
+      "module": "阅读",
+      "topic": "文化与宗教",
+      "collocations": [
+        {
+          "en": "an ancient monastery",
+          "zh": "古老的修道院"
+        },
+        {
+          "en": "a Buddhist monastery",
+          "zh": "佛教修道院"
+        },
+        {
+          "en": "preserve a monastery",
+          "zh": "保护修道院"
+        }
+      ],
+      "example": {
+        "en": "The ancient monastery has become a major tourist attraction because of its remarkable architecture and historical significance.",
+        "zh": "这座古老的修道院因其独特的建筑和重要的历史意义而成为主要旅游景点。"
+      },
+      "createdAt": "2026-09-24T12:09:35.709Z"
+    }
+  ],
   "paraphrases": [
     {
       "type": "上下义词",
@@ -17,5 +45,5 @@
       "createdAt": "2026-09-12T15:34:45.693Z"
     }
   ],
-  "syncedAt": "2026-09-19T06:09:50.922Z"
+  "syncedAt": "2026-09-24T12:09:37.220Z"
 }
