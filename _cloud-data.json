@@ -30,6 +30,21 @@
   ],
   "paraphrases": [
     {
+      "type": "近义表达",
+      "rating": 4,
+      "explanation": "这里的 show 作名词，指演出或节目；performance 指表演、演出，二者都可描述面向观众的现场呈现。需结合语境判断，show 还可指展览、电视节目，不能在所有场合都替换为 performance。",
+      "questionExpr": "show",
+      "originalExpr": "performance",
+      "relatedExpressions": [
+        "演出：演出",
+        "live show：现场表演",
+        "give a performance：进行表演"
+      ],
+      "examTip": "看到 show 或 performance 时，先判断语境是否指面向观众的表演，再确认其具体是演出、节目还是展览。",
+      "id": 1790254206753.3079,
+      "createdAt": "2026-09-24T12:50:06.753Z"
+    },
+    {
       "type": "上下义词",
       "rating": 2,
       "explanation": "art form指艺术形式，范围较广；ritual指仪式或仪式性行为，通常属于文化活动，但在特定语境中可被视为一种具有艺术表现力的形式。因此二者并非严格同义，而是语境中的概念包含或交叉关系，需结合上下文判断，不能机械替换。",
@@ -45,5 +60,5 @@
       "createdAt": "2026-09-12T15:34:45.693Z"
     }
   ],
-  "syncedAt": "2026-09-24T12:09:37.220Z"
+  "syncedAt": "2026-09-24T12:50:08.268Z"
 }
