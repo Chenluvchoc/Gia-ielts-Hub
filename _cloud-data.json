@@ -1,6 +1,33 @@
 {
   "vocab": [
     {
+      "id": 1790259057534.0068,
+      "word": "epitomise",
+      "pos": "核心动词",
+      "meaning": "是…的典范vt. 集中体现；概括",
+      "module": "写作",
+      "topic": "社会与文化",
+      "collocations": [
+        {
+          "en": "epitomise the spirit of innovation",
+          "zh": "体现创新精神"
+        },
+        {
+          "en": "epitomise the challenges facing society",
+          "zh": "代表社会面临的挑战"
+        },
+        {
+          "en": "epitomise modern urban life",
+          "zh": "体现现代城市生活"
+        }
+      ],
+      "example": {
+        "en": "The rapid development of artificial intelligence epitomises both the opportunities and the ethical challenges brought about by technological progress.",
+        "zh": "人工智能的快速发展充分体现了技术进步带来的机遇与伦理挑战。"
+      },
+      "createdAt": "2026-09-24T14:10:57.534Z"
+    },
+    {
       "id": 1790251775709.2832,
       "word": "monastery",
       "pos": "学术名词",
@@ -60,5 +87,5 @@
       "createdAt": "2026-09-12T15:34:45.693Z"
     }
   ],
-  "syncedAt": "2026-09-24T12:50:08.268Z"
+  "syncedAt": "2026-09-24T14:10:59.047Z"
 }
