@@ -1,6 +1,33 @@
 {
   "vocab": [
     {
+      "id": 1790319868465.0237,
+      "word": "substance",
+      "pos": "学术名词",
+      "meaning": "物质",
+      "module": "阅读",
+      "topic": "科技与环境",
+      "collocations": [
+        {
+          "en": "chemical substance",
+          "zh": "化学物质"
+        },
+        {
+          "en": "harmful substances",
+          "zh": "有害物质"
+        },
+        {
+          "en": "a substance used in",
+          "zh": "用于……的物质"
+        }
+      ],
+      "example": {
+        "en": "Many household products contain substances that can be harmful to the environment if they are not disposed of properly.",
+        "zh": "许多家用产品含有一些物质，如果处理不当，可能会对环境造成危害。"
+      },
+      "createdAt": "2026-09-25T07:04:28.465Z"
+    },
+    {
       "id": 1790318418393.2483,
       "word": "summit",
       "pos": "学术名词",
@@ -114,5 +141,5 @@
       "createdAt": "2026-09-12T15:34:45.693Z"
     }
   ],
-  "syncedAt": "2026-09-25T06:40:19.902Z"
+  "syncedAt": "2026-09-25T07:04:29.966Z"
 }
