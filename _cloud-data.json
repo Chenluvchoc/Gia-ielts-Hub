@@ -1,6 +1,33 @@
 {
   "vocab": [
     {
+      "id": 1790320305285.518,
+      "word": "out of wood",
+      "pos": "地道短语",
+      "meaning": "由木制成",
+      "module": "口语",
+      "topic": "家居与生活",
+      "collocations": [
+        {
+          "en": "make something out of wood",
+          "zh": "用木头制作某物"
+        },
+        {
+          "en": "be constructed out of wood",
+          "zh": "由木材建造"
+        },
+        {
+          "en": "furniture made out of wood",
+          "zh": "木制家具"
+        }
+      ],
+      "example": {
+        "en": "Many traditional houses in the village are built out of wood, which gives them a warm and natural appearance.",
+        "zh": "村里许多传统房屋都是用木头建造的，因此看起来温暖而自然。"
+      },
+      "createdAt": "2026-09-25T07:11:45.285Z"
+    },
+    {
       "id": 1790319868465.0237,
       "word": "substance",
       "pos": "学术名词",
@@ -141,5 +168,5 @@
       "createdAt": "2026-09-12T15:34:45.693Z"
     }
   ],
-  "syncedAt": "2026-09-25T07:04:29.966Z"
+  "syncedAt": "2026-09-25T07:11:46.834Z"
 }
