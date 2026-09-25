@@ -1,6 +1,33 @@
 {
   "vocab": [
     {
+      "id": 1790318418393.2483,
+      "word": "summit",
+      "pos": "学术名词",
+      "meaning": "n. （山等的）最高点，顶峰;峰会；",
+      "module": "写作",
+      "topic": "国际关系与合作",
+      "collocations": [
+        {
+          "en": "hold a summit",
+          "zh": "举行峰会"
+        },
+        {
+          "en": "attend an international summit",
+          "zh": "出席国际峰会"
+        },
+        {
+          "en": "reach the summit",
+          "zh": "登上顶峰"
+        }
+      ],
+      "example": {
+        "en": "World leaders gathered at the summit to discuss strategies for tackling climate change.",
+        "zh": "各国领导人齐聚峰会，讨论应对气候变化的策略。"
+      },
+      "createdAt": "2026-09-25T06:40:18.393Z"
+    },
+    {
       "id": 1790259057534.0068,
       "word": "epitomise",
       "pos": "核心动词",
@@ -87,5 +114,5 @@
       "createdAt": "2026-09-12T15:34:45.693Z"
     }
   ],
-  "syncedAt": "2026-09-24T14:10:59.047Z"
+  "syncedAt": "2026-09-25T06:40:19.902Z"
 }
